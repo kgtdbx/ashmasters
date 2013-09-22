@@ -20,4 +20,11 @@ queries contained in repository
 * latency_system_event.sql - wait event latency from DBA_HIST_SYSTEM_EVENT 
 * latency_waitclassmetric.sql - User I/O  latency from V$WAITCLASSMETRIC, ie  over last 60 seconds
 
+* load_awr - physical and logical reads per sec from AWR with snapshot time
+* top10_sql_with_events_from_AWR.sql - top 10 SQL queries with events per AWR snapshot
+* topsql - top 10 sql per last N minutes from ASH
+* aas_by_hour - display AAS (based on ASH) for number of days at specific time
+* aas_15min - display AAS (based on AWR) for all AWR snapshots calculated per 15 min spilt with split between CPU and WAIT 
+* event_histograms_delta_from_AWR.sql - event histograms deltas between AWR snapshots
 
+* topaas - display OEM like graph based on sampling and v$session view - NO DIAGNOSTIC PACK required
