@@ -1,5 +1,5 @@
 select * from (
-select sql_id, round(w*100,2),
+select sql_id, round(w*100,2) pct,
 nvl("'ON CPU'",0) "CPU",
 nvl("'Scheduler'",0) Scheduler ,
 nvl("'User I/O'",0) "User I/O" ,
@@ -20,7 +20,7 @@ from (
  count(*) cnt,
  sum(count(*)) over () totalsum
  from v$active_session_history
- where sample_time > sysdate - &NUM_MIN/24/60 and sql_id is not null
+ where sample_time > sysdate - &NUM_MIN/24/60 
  group by sql_id,
           decode(session_state,'WAITING',wait_class,'ON CPU')
  order by sql_id
@@ -32,5 +32,5 @@ pivot (
     'Configuration','Network','Other','Queueing','Scheduler','System I/O',
     'User I/O','ON CPU'
    )
-) order by 2 desc
+) where sql_id is not null order by 2 desc
 ) where rownum < 10;
