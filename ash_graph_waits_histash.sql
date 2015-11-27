@@ -1,7 +1,8 @@
-
+set linesize 150
 /*
-   ASH graph from v$active_session_history no filter by DBID nor time 
-   don't use dba_hist_active_sess_history ,
+   ASH graph from v$active_session_history and dba_hist_active_sess_history 
+   no filter no DBID
+   time filter by # of days, input variable &v_days
 
 
    Output looks like
@@ -32,8 +33,7 @@
 
 */
 
-
-Def v_secs=3600 --  bucket size
+Def v_secs=60 --  bucket size
 Def v_days=1 --  total time analyze
 Def v_bars=5 -- size of one AAS in characters
 Def v_graph=80
@@ -43,8 +43,10 @@ col graph format a30
 col fpct format 9.99
 col spct format 9.99
 col tpct format 9.99
-col aas1 format 9.99
-col aas2 format 9.99
+col aas1 format 99.99
+col aas2 format 99.99
+col first format A15
+col second format A15
 
 
 select to_char(start_time,'DD HH24:MI:SS'),
@@ -91,7 +93,7 @@ from (
      , sum(decode(event,'ON CPU',total,0))    cpu
      , sum(decode(event,'ON CPU',0,total))    waits
   from (
-   select
+    select
          to_char(sample_time,'YYMMDD')                      tday
        , trunc(to_char(sample_time,'SSSSS')/&v_secs)          tmod
        , to_char(sample_time,'YYMMDD')||trunc(to_char(sample_time,'SSSSS')/&v_secs) id
@@ -100,6 +102,24 @@ from (
        , (max(sample_id)-min(sample_id)+1)                    samples
      from
         v$active_session_history ash
+     where
+               sample_time > sysdate - &v_days
+     group by  trunc(to_char(sample_time,'SSSSS')/&v_secs)
+            ,  to_char(sample_time,'YYMMDD')
+            ,  decode(ash.session_state,'ON CPU','ON CPU',ash.event)
+union all
+    select
+         to_char(sample_time,'YYMMDD')                      tday
+       , trunc(to_char(sample_time,'SSSSS')/&v_secs)          tmod
+       , to_char(sample_time,'YYMMDD')||trunc(to_char(sample_time,'SSSSS')/&v_secs) id
+       , decode(ash.session_state,'ON CPU','ON CPU',ash.event)     event
+       , sum(decode(session_state,'ON CPU',10,decode(session_type,'BACKGROUND',0,10))) total
+       , (max(sample_id)-min(sample_id)+1)                    samples
+     from
+        dba_hist_active_sess_history ash
+     where
+               sample_time > sysdate - &v_days
+         and sample_time < ( select min(sample_time) from v$active_session_history)
      group by  trunc(to_char(sample_time,'SSSSS')/&v_secs)
             ,  to_char(sample_time,'YYMMDD')
             ,  decode(ash.session_state,'ON CPU','ON CPU',ash.event)
